@@ -744,7 +744,10 @@ class PicoConnection {
                     if (state === 'waiting_for_OK' && response.cmd === 'OK') {
                         progressBar.update(0);
                         const chunk = data.subarray(offset, offset + sendChunkSize);
-                        this.tcpClient.write(chunk);
+                        Prompt.print(`Write chunk...`);
+                        sendChunkThrottled(this.tcpClient, chunk)
+                        //this.tcpClient.write(chunk);
+                        Prompt.print(`Wrote chunk.`);
                         offset += sendChunkSize;
                         progressBar.update(offset);
                         if (offset >= data.length) {
@@ -1006,6 +1009,20 @@ class PicoConnection {
         const cmdBuffer = createCommandBuffer("SV", 0, 0);
         this.tcpClient.write(cmdBuffer);
     }
+}
+
+function sendChunkThrottled(client, chunk, CHUNK_SIZE = 512, DELAY = 10) {
+    for (let i = 0; i < chunk.length; i += CHUNK_SIZE) {
+        console.log("Write "+CHUNK_SIZE+" bytes...");
+        const slice = chunk.subarray(i, i + CHUNK_SIZE);
+        client.write(slice);
+        sleep(DELAY);
+    }
+}
+
+function sleep(ms) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {}
 }
 
 module.exports = PicoConnection;

@@ -54,7 +54,8 @@ class CasLoader {
                 if (state === 'waiting_for_OK' && response.cmd === 'OK') {
                     console.log("Received OK. Sending first chunk...");
                     const chunk = casData.subarray(offset, offset + CHUNK_SIZE);
-                    client.write(chunk);
+                    sendChunkThrottled(client, chunk);
+                    //client.write(chunk);
                     console.log(`Sent chunk at offset ${offset}`);
                     offset += CHUNK_SIZE;
                     if (offset >= casData.length) {
@@ -97,6 +98,20 @@ class CasLoader {
             if (onError) onError(err);
         });
     }
+}
+
+function sendChunkThrottled(client, chunk, CHUNK_SIZE = 512, DELAY = 10) {
+    for (let i = 0; i < chunk.length; i += CHUNK_SIZE) {
+        console.log("Write "+CHUNK_SIZE+" bytes...");
+        const slice = chunk.subarray(i, i + CHUNK_SIZE);
+        client.write(slice);
+        sleep(DELAY);
+    }
+}
+
+function sleep(ms) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {}
 }
 
 module.exports = CasLoader;
