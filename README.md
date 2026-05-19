@@ -1,3 +1,6 @@
+This is fork which resolves (?) https://github.com/fitch/SVI-3x8-PicoExpander/issues/5 and https://github.com/fitch/SVI-3x8-PicoExpander/issues/6 . YMMV though.
+
+
 # SVI-3x8 PicoExpander
 
 ## Overview
