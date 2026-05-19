@@ -392,6 +392,7 @@ int __no_inline_not_in_flash_func(main)() {
         log_message("Waiting for WiFi credentials...");
 
 rewait_for_wifi_credentials:
+        pico_set_led(true);
         pico_state = PICO_STATE_WAITING_CREDENTIALS;
         while (pico_state != PICO_STATE_CREDENTIALS_RECEIVED) {
             sleep_ms(10);
@@ -404,8 +405,11 @@ rewait_for_wifi_credentials:
     } 
     pico_state = PICO_STATE_CREDENTIALS_STORED;
     pico_set_led(false);
+
+connect_wifi:
     pico_state = PICO_STATE_WIFI_CONNECTING;
 
+    /*
     log_message("Starting blocking Wi-Fi scan...");
     network_status = NETWORK_STATUS_CONNECTING;
     cyw43_arch_enable_sta_mode();
@@ -429,6 +433,11 @@ rewait_for_wifi_credentials:
             log_message("SSID auth mode unknown (%d), defaulting to WPA2_AES_PSK", found_ssid_auth_mode);
             break;
     }
+    */
+    network_status = NETWORK_STATUS_CONNECTING;
+    cyw43_arch_enable_sta_mode();
+    uint32_t auth = CYW43_AUTH_WPA2_AES_PSK; // Just always assume WPA2_AES_PSK to speed up wifi connection...
+
 
     int ret = cyw43_arch_wifi_connect_timeout_ms((char *)SSID, (char *)Password, auth, 30000);
     if (ret != PICO_OK) {
@@ -443,32 +452,33 @@ rewait_for_wifi_credentials:
         switch (ret) {
             case PICO_ERROR_TIMEOUT:
                 log_message("WiFi connection timed out.");
-                erase_wifi_credentials();
+                //erase_wifi_credentials();
 
                 pico_state = PICO_STATE_WIFI_TIMEOUT;
-                log_message("Waiting again for WiFi credentials...");
-                goto rewait_for_wifi_credentials; // Retry fetching credentials
+                //log_message("Waiting again for WiFi credentials...");
+                //goto rewait_for_wifi_credentials; // Retry fetching credentials
                 break;
             case PICO_ERROR_BADAUTH:
                 log_message("WiFi connection failed due to bad authentication.");
-                erase_wifi_credentials();
+                //erase_wifi_credentials();
 
                 pico_state = PICO_STATE_WIFI_BAD_AUTH;
-                log_message("Waiting again for WiFi credentials...");
-                goto rewait_for_wifi_credentials; // Retry fetching credentials
+                //log_message("Waiting again for WiFi credentials...");
+                //goto rewait_for_wifi_credentials; // Retry fetching credentials
                 break;
             case PICO_ERROR_CONNECT_FAILED:
                 log_message("WiFi connection failed.");
-                blink_count = 3;
+                //blink_count = 3;
                 break; 
             default:
                 log_message("WiFi connection failed with unknown error code: %d", ret);
-                blink_count = 4;
+                //blink_count = 4;
                 break;
         }
-        pico_state = PICO_STATE_DUMP_LOG;
-        erase_wifi_credentials();
-        error(blink_count);
+        //pico_state = PICO_STATE_DUMP_LOG;
+        //erase_wifi_credentials();
+        //error(blink_count);
+        goto connect_wifi; // Try to re-connect...
     }
 
     network_status = NETWORK_STATUS_CONNECTED;
